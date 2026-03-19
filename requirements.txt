@@ -1,0 +1,4 @@
+google-genai    # El cerebro (Gemini Pro con Reasoning)
+python-dotenv         # Seguridad para tus llaves
+requests              # Para conectarnos a cualquier cosa (luces, APIs)
+pydantic              # Para validar datos y estructuras JSON (Crucial para orquestación)
