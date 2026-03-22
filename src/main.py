@@ -3,11 +3,12 @@ import requests
 import webbrowser
 import urllib.parse
 from core.brain import LyraBrain
+from core.voice import LyraVoice
 
 class AegisOrchestrator:
     def __init__(self):
         self.brain = LyraBrain()
-        # Mapeo estricto de habilidades reales
+        self.voice = LyraVoice() # <--- INYECTAMOS LA VOZ AQUÍ
         self.skills = {
             "abrir_web": self._skill_open_web,
             "redactar_correo": self._skill_draft_email,
@@ -96,10 +97,14 @@ class AegisOrchestrator:
             if response.get("cod") == 200:
                 temp = response['main']['temp']
                 desc = response['weather'][0]['description']
-                print(f">>> [AUDIO] Lyra dice: El clima actual en {ubicacion} es de {temp}°C, con {desc}. <<<")
+                
+                # Armamos el texto y lo enviamos a las cuerdas vocales reales
+                mensaje_clima = f"El clima actual en {ubicacion} es de {temp} grados centígrados, con {desc}."
+                self.voice.speak(mensaje_clima)
+                
             else:
                 mensaje_error = response.get("message", "Error desconocido")
-                print(f">>> [AUDIO] Lyra dice: Falló la conexión satelital. Razón: {mensaje_error} <<<")
+                self.voice.speak(f"Falló la conexión satelital. Razón: {mensaje_error}")
         except Exception as e:
             print(f">>> [SISTEMA] Fallo de conexión TCP/IP: {e} <<<")
 
@@ -107,18 +112,34 @@ class AegisOrchestrator:
         texto = params.get('text', 'Error en la síntesis del texto cognitivo.')
         print(f">>> [AUDIO] Lyra dice: {texto} <<<")
 
+    def _skill_speak(self, params):
+        texto = params.get('text', 'Error en la síntesis del texto cognitivo.')
+        # REEMPLAZAMOS EL PRINT POR LA EJECUCIÓN DEL MÓDULO DE VOZ
+        self.voice.speak(texto)
 
 # MOTOR DE ARRANQUE CONTINUO
 if __name__ == "__main__":
     aegis = AegisOrchestrator()
     print("=== SISTEMA AEGIS LYRA EN LÍNEA ===")
-    print("Infraestructura Fase 1 Operativa. Escribe 'apagar' para desconectar.\n")
+    print("Infraestructura Fase 2 (Multimodal) Operativa.")
+    print("💡 TIP: Escribe tu orden, o presiona [ENTER] vacío para usar el micrófono.\n")
     
     while True:
-        comando = input("\n[Demian] -> ")
+        # 1. Espera entrada por teclado
+        comando = input("\n[Demian] (Escribe o da Enter para Voz) -> ")
+        
+        # 2. Si el usuario solo dio Enter (vacío), encendemos los oídos
+        if comando.strip() == "":
+            comando = aegis.voice.listen()
+            
+        # 3. Si después de escuchar no hay nada (ruido o silencio), reinicia el ciclo
+        if not comando or comando.strip() == "":
+            continue
+            
+        # 4. Protocolo de apagado
         if comando.lower() in ['salir', 'apagar', 'exit', 'desconectar']:
             print("[Aegis] Desconectando matriz. Operaciones suspendidas. Excelente jornada.")
             break
-        if comando.strip() == "":
-            continue
+            
+        # 5. Ejecutar la orden
         aegis.run(comando)
